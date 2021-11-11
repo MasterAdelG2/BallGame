@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"name": "StreamlineTest",
+			"path": "."
+		},
+		{
+			"name": "UE4",
+			"path": "C:\\MYEngines\\UE_4.26"
+		}
+	],
+	"settings": {
+		"typescript.tsc.autoDetect": "off",
+		"C_Cpp.default.forcedInclude": [
+			"${default}",
+			"C:\\PROJECTS\\UE\\StreamlineTest\\Intermediate\\Build\\Win64\\UE4Editor\\Development\\StreamlineTest\\Definitions.StreamlineTest.h",
+			"C:\\PROJECTS\\UE\\StreamlineTest\\Intermediate\\Build\\Win64\\StreamlineTestEditor\\Development\\Engine\\SharedPCH.Engine.ShadowErrors.h"
+		]
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cpptools",
+			"ms-dotnettools.csharp"
+		]
+	}
+}
