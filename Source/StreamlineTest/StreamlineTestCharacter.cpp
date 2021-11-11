@@ -11,6 +11,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
+// My Included Libraries
+#include "TimerManager.h"
+#include "GameFramework/PawnMovementComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -136,6 +139,9 @@ void AStreamlineTestCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	PlayerInputComponent->BindAxis("TurnRate", this, &AStreamlineTestCharacter::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AStreamlineTestCharacter::LookUpAtRate);
+	
+	// My Added Section of Code
+	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &AStreamlineTestCharacter::PreDash);
 }
 
 void AStreamlineTestCharacter::OnFire()
@@ -256,20 +262,42 @@ void AStreamlineTestCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 
 void AStreamlineTestCharacter::MoveForward(float Value)
 {
-	if (Value != 0.0f)
+
+	if (Value != 0.0f && !GetMovementComponent()->IsFalling())
 	{
-		// add movement in that direction
-		AddMovementInput(GetActorForwardVector(), Value);
+		// Check Dash if Pressed
+		if (bDash)
+		{
+			LaunchCharacter(FVector(0,0,DashHight),false,false);
+			GetWorldTimerManager().SetTimer(ApplyDashTimerHandle,this,&AStreamlineTestCharacter::Dash,0.1f,false);
+			DashVector = GetActorForwardVector() * Value;
+		}
+		else
+		{
+			// add movement in that direction
+			AddMovementInput(GetActorForwardVector(), Value);
+		}
 	}
 }
 
 void AStreamlineTestCharacter::MoveRight(float Value)
 {
-	if (Value != 0.0f)
+	if (Value != 0.0f && !GetMovementComponent()->IsFalling())
 	{
-		// add movement in that direction
-		AddMovementInput(GetActorRightVector(), Value);
+		if (bDash)
+		{
+			LaunchCharacter(FVector(0,0,DashHight),false,false);
+			GetWorldTimerManager().SetTimer(ApplyDashTimerHandle,this,&AStreamlineTestCharacter::Dash,0.1f,false);
+			DashVector = GetActorRightVector() * Value;
+		}
+		else
+		{
+			// add movement in that direction
+			AddMovementInput(GetActorRightVector(), Value);
+		}
 	}
+	// Disable the Dash Activation
+	bDash = false;
 }
 
 void AStreamlineTestCharacter::TurnAtRate(float Rate)
@@ -297,4 +325,17 @@ bool AStreamlineTestCharacter::EnableTouchscreenMovement(class UInputComponent* 
 	}
 	
 	return false;
+}
+
+
+void AStreamlineTestCharacter::Dash()
+{
+	//AddMovementInput(DashVector*DashDistance,DashSpeed);
+	LaunchCharacter(DashVector*DashDistance*DashSpeed,false,false);
+}
+
+// PreDash to Elevate Character and Avoid Ground Resistance
+void AStreamlineTestCharacter::PreDash()
+{
+	bDash = true;
 }

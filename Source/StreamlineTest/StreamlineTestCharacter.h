@@ -144,5 +144,32 @@ public:
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
+// My Added Section of Code
+protected:
+	// Activate Dash
+	bool bDash=false;
+	// Dash Speed
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
+	float DashSpeed= 1.f;
+	// Dash Distance
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
+	float DashDistance= 100.f;
+	// Dash Time
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
+	float DashTime= 1.f;
+	// Dash Hight
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
+	float DashHight= 150.f;
+	// Dash Vector
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
+	FVector DashVector= FVector::ZeroVector;
+	// TimerHandle for elevating
+	FTimerHandle ApplyDashTimerHandle;
+	// Dash 
+	UFUNCTION()
+	void Dash();
+	// PreDash to Elevate Character and Avoid Ground Resistance
+	UFUNCTION()
+	void PreDash();
 };
 
