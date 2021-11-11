@@ -145,6 +145,7 @@ public:
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
 // My Added Section of Code
+// Dashing Part
 protected:
 	// Activate Dash
 	bool bDash=false;
@@ -171,5 +172,32 @@ protected:
 	// PreDash to Elevate Character and Avoid Ground Resistance
 	UFUNCTION()
 	void PreDash();
+
+// Gravity Gun Part
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
+	class UStaticMeshComponent* HeldSlot;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
+	class UPhysicsConstraintComponent* GrabConstraint;
+
+	class UPrimitiveComponent* GrabedObject;
+	// Grabbing Range
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
+	float GrabRange = 5000.f;
+	// Shoot Power
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
+	float ShootPower = 500000.f;
+
+	void GrabObject(FHitResult Hit);
+
+	bool TraceObject(FHitResult & Hit);
+
+	void DropObject();
+
+	void AbsorbObject();
+
+	void PokeObject(FHitResult Hit);
+
 };
 

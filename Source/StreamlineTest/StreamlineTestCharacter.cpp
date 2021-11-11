@@ -14,6 +14,8 @@
 // My Included Libraries
 #include "TimerManager.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "PhysicsEngine/PhysicsConstraintComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -85,6 +87,14 @@ AStreamlineTestCharacter::AStreamlineTestCharacter()
 
 	// Uncomment the following line to turn motion controllers on by default:
 	//bUsingMotionControllers = true;
+
+	// My Added Construction Code
+	HeldSlot = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldObjectSlot"));
+	HeldSlot->SetupAttachment(FirstPersonCameraComponent);
+
+	GrabConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("GrabConstraint"));
+	GrabConstraint->SetupAttachment(HeldSlot);
+
 }
 
 void AStreamlineTestCharacter::BeginPlay()
@@ -120,9 +130,6 @@ void AStreamlineTestCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
-	// Bind fire event
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AStreamlineTestCharacter::OnFire);
-
 	// Enable touchscreen input
 	EnableTouchscreenMovement(PlayerInputComponent);
 
@@ -142,54 +149,8 @@ void AStreamlineTestCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	
 	// My Added Section of Code
 	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &AStreamlineTestCharacter::PreDash);
-}
-
-void AStreamlineTestCharacter::OnFire()
-{
-	// try and fire a projectile
-	if (ProjectileClass != nullptr)
-	{
-		UWorld* const World = GetWorld();
-		if (World != nullptr)
-		{
-			if (bUsingMotionControllers)
-			{
-				const FRotator SpawnRotation = VR_MuzzleLocation->GetComponentRotation();
-				const FVector SpawnLocation = VR_MuzzleLocation->GetComponentLocation();
-				World->SpawnActor<AStreamlineTestProjectile>(ProjectileClass, SpawnLocation, SpawnRotation);
-			}
-			else
-			{
-				const FRotator SpawnRotation = GetControlRotation();
-				// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-				const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
-
-				//Set Spawn Collision Handling Override
-				FActorSpawnParameters ActorSpawnParams;
-				ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-
-				// spawn the projectile at the muzzle
-				World->SpawnActor<AStreamlineTestProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
-			}
-		}
-	}
-
-	// try and play the sound if specified
-	if (FireSound != nullptr)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
-	}
-
-	// try and play a firing animation if specified
-	if (FireAnimation != nullptr)
-	{
-		// Get the animation object for the arms mesh
-		UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
-		if (AnimInstance != nullptr)
-		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
-		}
-	}
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AStreamlineTestCharacter::OnFire);
+	PlayerInputComponent->BindAction("Grab", IE_Pressed, this, &AStreamlineTestCharacter::AbsorbObject);
 }
 
 void AStreamlineTestCharacter::OnResetVR()
@@ -221,44 +182,6 @@ void AStreamlineTestCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 	}
 	TouchItem.bIsPressed = false;
 }
-
-//Commenting this section out to be consistent with FPS BP template.
-//This allows the user to turn without using the right virtual joystick
-
-//void AStreamlineTestCharacter::TouchUpdate(const ETouchIndex::Type FingerIndex, const FVector Location)
-//{
-//	if ((TouchItem.bIsPressed == true) && (TouchItem.FingerIndex == FingerIndex))
-//	{
-//		if (TouchItem.bIsPressed)
-//		{
-//			if (GetWorld() != nullptr)
-//			{
-//				UGameViewportClient* ViewportClient = GetWorld()->GetGameViewport();
-//				if (ViewportClient != nullptr)
-//				{
-//					FVector MoveDelta = Location - TouchItem.Location;
-//					FVector2D ScreenSize;
-//					ViewportClient->GetViewportSize(ScreenSize);
-//					FVector2D ScaledDelta = FVector2D(MoveDelta.X, MoveDelta.Y) / ScreenSize;
-//					if (FMath::Abs(ScaledDelta.X) >= 4.0 / ScreenSize.X)
-//					{
-//						TouchItem.bMoved = true;
-//						float Value = ScaledDelta.X * BaseTurnRate;
-//						AddControllerYawInput(Value);
-//					}
-//					if (FMath::Abs(ScaledDelta.Y) >= 4.0 / ScreenSize.Y)
-//					{
-//						TouchItem.bMoved = true;
-//						float Value = ScaledDelta.Y * BaseTurnRate;
-//						AddControllerPitchInput(Value);
-//					}
-//					TouchItem.Location = Location;
-//				}
-//				TouchItem.Location = Location;
-//			}
-//		}
-//	}
-//}
 
 void AStreamlineTestCharacter::MoveForward(float Value)
 {
@@ -338,4 +261,93 @@ void AStreamlineTestCharacter::Dash()
 void AStreamlineTestCharacter::PreDash()
 {
 	bDash = true;
+}
+
+void AStreamlineTestCharacter::GrabObject(FHitResult Hit)
+{
+	UPrimitiveComponent* HittedComponent= Hit.GetComponent();
+	FVector HittedComponentLocation= HittedComponent->GetComponentLocation();
+	HeldSlot->SetWorldLocation(HittedComponentLocation);
+	GrabConstraint->SetConstrainedComponents(HeldSlot,FName::FName(), HittedComponent,Hit.BoneName);
+	Hit.Component->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn,ECollisionResponse::ECR_Ignore);
+	GrabedObject = Hit.GetComponent();
+	
+	HeldSlot->SetWorldLocation(GetActorLocation()+ GetActorForwardVector()*250);
+}
+
+void AStreamlineTestCharacter::DropObject()
+{
+	GrabConstraint->BreakConstraint();
+	GrabedObject->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn,ECollisionResponse::ECR_Block);
+	GrabedObject = nullptr;
+}
+
+bool AStreamlineTestCharacter::TraceObject(FHitResult &Hit)
+{
+	FVector StartLocation = FirstPersonCameraComponent->GetComponentLocation();
+	FVector EndLocation = StartLocation + FirstPersonCameraComponent->GetForwardVector()* GrabRange;
+	bool bSuccess= GetWorld()->LineTraceSingleByObjectType(
+	OUT Hit,
+	StartLocation,
+	EndLocation,
+	FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody));
+	return bSuccess;
+}
+
+void AStreamlineTestCharacter::AbsorbObject()
+{
+	if (GrabedObject != nullptr)
+	{
+		DropObject();
+	}
+	else
+	{
+		FHitResult Hit;
+		if (TraceObject(Hit))
+		{
+			GrabObject(Hit);
+		}
+	}
+}
+
+void AStreamlineTestCharacter::OnFire()
+{
+	if (GrabedObject != nullptr)
+	{
+		FHitResult Hit;
+		Hit.Component = GrabedObject;
+		Hit.ImpactPoint = GrabedObject->GetComponentLocation();
+		DropObject();
+		PokeObject(Hit);
+	}
+	else
+	{
+		FHitResult Hit;
+		if (TraceObject(Hit))
+		{
+			PokeObject(Hit);
+		}
+	}
+}
+
+void AStreamlineTestCharacter::PokeObject(FHitResult Hit)
+{
+	FVector AppliedForce = FirstPersonCameraComponent->GetForwardVector()*ShootPower;
+	Hit.GetComponent()->AddImpulseAtLocation(AppliedForce,Hit.ImpactPoint,Hit.BoneName);
+	
+	// try and play the sound if specified
+	if (FireSound != nullptr)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+	}
+	// try and play a firing animation if specified
+	if (FireAnimation != nullptr)
+	{
+		// Get the animation object for the arms mesh
+		UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
+		if (AnimInstance != nullptr)
+		{
+			AnimInstance->Montage_Play(FireAnimation, 1.f);
+		}
+	}
 }
