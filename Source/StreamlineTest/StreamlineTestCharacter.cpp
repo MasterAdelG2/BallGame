@@ -13,7 +13,7 @@
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
 // My Included Libraries
 #include "TimerManager.h"
-#include "GameFramework/PawnMovementComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 
@@ -89,6 +89,8 @@ AStreamlineTestCharacter::AStreamlineTestCharacter()
 	//bUsingMotionControllers = true;
 
 	// My Added Construction Code
+	PrimaryActorTick.bCanEverTick = true;
+
 	HeldSlot = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldObjectSlot"));
 	HeldSlot->SetupAttachment(FirstPersonCameraComponent);
 
@@ -118,6 +120,44 @@ void AStreamlineTestCharacter::BeginPlay()
 	}
 }
 
+void AStreamlineTestCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (!bIsDashing)
+	{
+		FVector AddedMovement = GetActorForwardVector()* MoveForwardThrottle + GetActorRightVector()* MoveRightThrottle;
+		// Apply JetBack Force if Pressed
+		if (bIsJetting)	
+		{
+			AddedMovement.Z = JetPower;
+			LaunchCharacter(AddedMovement,false,false);
+		}
+		if (MoveForwardThrottle || MoveRightThrottle)
+		{
+			// Apply Movement if Not have Dash Order
+			if (!bDashOrder)	
+			{
+				AddMovementInput(AddedMovement * MoveSpeed);
+			}
+			// Applying Dash if Not Jetting
+			else if (!bIsJetting && !GetCharacterMovement()->IsFalling())
+			{
+				bIsDashing=true;
+				LaunchCharacter(FVector(0,0,DashHight),false,false);
+				GetWorldTimerManager().SetTimer(ApplyDashTimerHandle,this,&AStreamlineTestCharacter::Dash,0.1f,false);
+				DashVector = MoveForwardThrottle ? GetActorForwardVector() * MoveForwardThrottle : GetActorRightVector()* MoveRightThrottle;
+			}
+		}
+	}
+	// if isDashing and Touched the Ground set isDashing back to false
+	else if (!GetCharacterMovement()->IsFalling())
+	{
+		bIsDashing= false;
+	}
+	// set DashOrder back to false
+	bDashOrder = false;
+}
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -147,10 +187,12 @@ void AStreamlineTestCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AStreamlineTestCharacter::LookUpAtRate);
 	
-	// My Added Section of Code
+	// My Added Binding Keys
 	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &AStreamlineTestCharacter::PreDash);
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AStreamlineTestCharacter::OnFire);
 	PlayerInputComponent->BindAction("Grab", IE_Pressed, this, &AStreamlineTestCharacter::AbsorbObject);
+	PlayerInputComponent->BindAction("Jetting", IE_Pressed, this, &AStreamlineTestCharacter::Jetting);
+	PlayerInputComponent->BindAction("Jetting", IE_Released, this, &AStreamlineTestCharacter::StoppedJetting);
 }
 
 void AStreamlineTestCharacter::OnResetVR()
@@ -185,42 +227,12 @@ void AStreamlineTestCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 
 void AStreamlineTestCharacter::MoveForward(float Value)
 {
-
-	if (Value != 0.0f && !GetMovementComponent()->IsFalling())
-	{
-		// Check Dash if Pressed
-		if (bDash)
-		{
-			LaunchCharacter(FVector(0,0,DashHight),false,false);
-			GetWorldTimerManager().SetTimer(ApplyDashTimerHandle,this,&AStreamlineTestCharacter::Dash,0.1f,false);
-			DashVector = GetActorForwardVector() * Value;
-		}
-		else
-		{
-			// add movement in that direction
-			AddMovementInput(GetActorForwardVector(), Value);
-		}
-	}
+	MoveForwardThrottle = Value;
 }
 
 void AStreamlineTestCharacter::MoveRight(float Value)
 {
-	if (Value != 0.0f && !GetMovementComponent()->IsFalling())
-	{
-		if (bDash)
-		{
-			LaunchCharacter(FVector(0,0,DashHight),false,false);
-			GetWorldTimerManager().SetTimer(ApplyDashTimerHandle,this,&AStreamlineTestCharacter::Dash,0.1f,false);
-			DashVector = GetActorRightVector() * Value;
-		}
-		else
-		{
-			// add movement in that direction
-			AddMovementInput(GetActorRightVector(), Value);
-		}
-	}
-	// Disable the Dash Activation
-	bDash = false;
+	MoveRightThrottle = Value;
 }
 
 void AStreamlineTestCharacter::TurnAtRate(float Rate)
@@ -260,14 +272,14 @@ void AStreamlineTestCharacter::Dash()
 // PreDash to Elevate Character and Avoid Ground Resistance
 void AStreamlineTestCharacter::PreDash()
 {
-	bDash = true;
+	bDashOrder = true;
 }
 
 void AStreamlineTestCharacter::GrabObject(FHitResult Hit)
 {
 	UPrimitiveComponent* HittedComponent= Hit.GetComponent();
 	FVector HittedComponentLocation= HittedComponent->GetComponentLocation();
-	HeldSlot->SetWorldLocation(HittedComponentLocation);
+	HeldSlot->SetWorldLocation(HittedComponentLocation,false,nullptr,ETeleportType::TeleportPhysics);
 	GrabConstraint->SetConstrainedComponents(HeldSlot,FName::FName(), HittedComponent,Hit.BoneName);
 	Hit.Component->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn,ECollisionResponse::ECR_Ignore);
 	GrabedObject = Hit.GetComponent();
@@ -350,4 +362,14 @@ void AStreamlineTestCharacter::PokeObject(FHitResult Hit)
 			AnimInstance->Montage_Play(FireAnimation, 1.f);
 		}
 	}
+}
+
+void AStreamlineTestCharacter::Jetting()
+{
+	bIsJetting = true;
+}
+
+void AStreamlineTestCharacter::StoppedJetting()
+{
+	bIsJetting = false;
 }

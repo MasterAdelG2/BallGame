@@ -145,13 +145,21 @@ public:
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
 // My Added Section of Code
-// Dashing Part
 protected:
-	// Activate Dash
-	bool bDash=false;
+	void Tick(float DeltaTime);
+
+	float MoveForwardThrottle=0;
+	float MoveRightThrottle=0;
+	float MoveSpeed=200.f;
+
+// Dashing Part
+	// Starts Dash on First Tick
+	bool bDashOrder=false;
+	// Prevent any Movement or Flying from Happening
+	bool bIsDashing=false;
 	// Dash Speed
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
-	float DashSpeed= 1.f;
+	float DashSpeed= 10.f;
 	// Dash Distance
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
 	float DashDistance= 100.f;
@@ -160,7 +168,7 @@ protected:
 	float DashTime= 1.f;
 	// Dash Hight
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
-	float DashHight= 150.f;
+	float DashHight= 250.f;
 	// Dash Vector
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
 	FVector DashVector= FVector::ZeroVector;
@@ -187,7 +195,7 @@ protected:
 	float GrabRange = 5000.f;
 	// Shoot Power
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
-	float ShootPower = 500000.f;
+	float ShootPower = 1000000.f;
 
 	void GrabObject(FHitResult Hit);
 
@@ -198,6 +206,17 @@ protected:
 	void AbsorbObject();
 
 	void PokeObject(FHitResult Hit);
+
+// JetBack Part
+
+	bool bIsJetting = false;
+	// JetBack Flying Power
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "JetBack")
+	float JetPower = 20.f;
+
+	void Jetting();
+
+	void StoppedJetting();
 
 };
 
