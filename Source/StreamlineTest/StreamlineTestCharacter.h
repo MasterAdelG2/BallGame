@@ -146,14 +146,15 @@ public:
 
 // My Added Section of Code
 protected:
+	// Tick Event for Movement, Jetting & Dashing Application
 	void Tick(float DeltaTime);
-
+	// Added Movement Throttling Multiplyed with Move Speed
 	float MoveForwardThrottle=0;
 	float MoveRightThrottle=0;
 	float MoveSpeed=200.f;
 
 // Dashing Part
-	// Starts Dash on First Tick
+	// Starts Dash on Next Tick
 	bool bDashOrder=false;
 	// Prevent any Movement or Flying from Happening
 	bool bIsDashing=false;
@@ -163,6 +164,7 @@ protected:
 	// Dash Distance
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
 	float DashDistance= 100.f;
+
 	// Dash Time
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
 	float DashTime= 1.f;
@@ -172,51 +174,54 @@ protected:
 	// Dash Vector
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
 	FVector DashVector= FVector::ZeroVector;
-	// TimerHandle for elevating
+	// TimerHandle for Dashing After elevation
 	FTimerHandle ApplyDashTimerHandle;
-	// Dash 
+	// Apply Dash
 	UFUNCTION()
 	void Dash();
-	// PreDash to Elevate Character and Avoid Ground Resistance
+	// Triggers DashOrder to Dash on Next Tick
 	UFUNCTION()
 	void PreDash();
 
 // Gravity Gun Part
-
+	// Acts like a Hand to Hold Any Object
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
 	class UStaticMeshComponent* HeldSlot;
-
+	// Constrain Links the HeldSlot with the GrabbedObject
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
 	class UPhysicsConstraintComponent* GrabConstraint;
-
+	// Reference to Grabbed Object
 	class UPrimitiveComponent* GrabedObject;
-	// Grabbing Range
+	// Max Allowed Grabbing Range
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
 	float GrabRange = 5000.f;
-	// Shoot Power
+	// Shooting Power
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
 	float ShootPower = 1000000.f;
-
-	void GrabObject(FHitResult Hit);
-
+	// Try Grab Targeted Object
+	UFUNCTION()
+	void OnGrab();
+	// Draw Line Trace to the Max GrabRange
+	UFUNCTION()
 	bool TraceObject(FHitResult & Hit);
-
+	// Grabs Hitted Object
+	UFUNCTION()
+	void GrabObject(FHitResult Hit);
+	// Breaks Constrain with GrabbedObject 
+	UFUNCTION()
 	void DropObject();
-
-	void AbsorbObject();
-
-	void PokeObject(FHitResult Hit);
+	// Apply Force to Object
+	UFUNCTION()
+	void ShootObject(FHitResult Hit);
 
 // JetBack Part
-
+	// Trigger for Jetting
 	bool bIsJetting = false;
 	// JetBack Flying Power
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "JetBack")
 	float JetPower = 20.f;
-
+	// Triggers Jetting
 	void Jetting();
-
+	// Stops Jetting Trigger
 	void StoppedJetting();
-
 };
-

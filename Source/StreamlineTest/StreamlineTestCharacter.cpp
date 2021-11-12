@@ -190,7 +190,7 @@ void AStreamlineTestCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	// My Added Binding Keys
 	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &AStreamlineTestCharacter::PreDash);
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AStreamlineTestCharacter::OnFire);
-	PlayerInputComponent->BindAction("Grab", IE_Pressed, this, &AStreamlineTestCharacter::AbsorbObject);
+	PlayerInputComponent->BindAction("Grab", IE_Pressed, this, &AStreamlineTestCharacter::OnGrab);
 	PlayerInputComponent->BindAction("Jetting", IE_Pressed, this, &AStreamlineTestCharacter::Jetting);
 	PlayerInputComponent->BindAction("Jetting", IE_Released, this, &AStreamlineTestCharacter::StoppedJetting);
 }
@@ -265,48 +265,16 @@ bool AStreamlineTestCharacter::EnableTouchscreenMovement(class UInputComponent* 
 
 void AStreamlineTestCharacter::Dash()
 {
-	//AddMovementInput(DashVector*DashDistance,DashSpeed);
 	LaunchCharacter(DashVector*DashDistance*DashSpeed,false,false);
 }
 
-// PreDash to Elevate Character and Avoid Ground Resistance
+// Triggers DashOrder to Dash on Next Tick
 void AStreamlineTestCharacter::PreDash()
 {
 	bDashOrder = true;
 }
 
-void AStreamlineTestCharacter::GrabObject(FHitResult Hit)
-{
-	UPrimitiveComponent* HittedComponent= Hit.GetComponent();
-	FVector HittedComponentLocation= HittedComponent->GetComponentLocation();
-	HeldSlot->SetWorldLocation(HittedComponentLocation,false,nullptr,ETeleportType::TeleportPhysics);
-	GrabConstraint->SetConstrainedComponents(HeldSlot,FName::FName(), HittedComponent,Hit.BoneName);
-	Hit.Component->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn,ECollisionResponse::ECR_Ignore);
-	GrabedObject = Hit.GetComponent();
-	
-	HeldSlot->SetWorldLocation(GetActorLocation()+ GetActorForwardVector()*250);
-}
-
-void AStreamlineTestCharacter::DropObject()
-{
-	GrabConstraint->BreakConstraint();
-	GrabedObject->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn,ECollisionResponse::ECR_Block);
-	GrabedObject = nullptr;
-}
-
-bool AStreamlineTestCharacter::TraceObject(FHitResult &Hit)
-{
-	FVector StartLocation = FirstPersonCameraComponent->GetComponentLocation();
-	FVector EndLocation = StartLocation + FirstPersonCameraComponent->GetForwardVector()* GrabRange;
-	bool bSuccess= GetWorld()->LineTraceSingleByObjectType(
-	OUT Hit,
-	StartLocation,
-	EndLocation,
-	FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody));
-	return bSuccess;
-}
-
-void AStreamlineTestCharacter::AbsorbObject()
+void AStreamlineTestCharacter::OnGrab()
 {
 	if (GrabedObject != nullptr)
 	{
@@ -322,6 +290,37 @@ void AStreamlineTestCharacter::AbsorbObject()
 	}
 }
 
+bool AStreamlineTestCharacter::TraceObject(FHitResult &Hit)
+{
+	FVector StartLocation = FirstPersonCameraComponent->GetComponentLocation();
+	FVector EndLocation = StartLocation + FirstPersonCameraComponent->GetForwardVector()* GrabRange;
+	bool bSuccess= GetWorld()->LineTraceSingleByObjectType(
+	OUT Hit,
+	StartLocation,
+	EndLocation,
+	FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody));
+	return bSuccess;
+}
+
+void AStreamlineTestCharacter::GrabObject(FHitResult Hit)
+{
+	UPrimitiveComponent* HittedComponent= Hit.GetComponent();
+	FVector HittedComponentLocation= HittedComponent->GetComponentLocation();
+	HeldSlot->SetWorldLocation(HittedComponentLocation);
+	GrabConstraint->SetConstrainedComponents(HeldSlot,FName::FName(), HittedComponent,Hit.BoneName);
+	Hit.Component->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn,ECollisionResponse::ECR_Ignore);
+	GrabedObject = Hit.GetComponent();
+	FVector GunGrabPoint = FirstPersonCameraComponent->GetComponentLocation() + FirstPersonCameraComponent->GetForwardVector() * 250;
+	HeldSlot->SetWorldLocation(GunGrabPoint);
+}
+
+void AStreamlineTestCharacter::DropObject()
+{
+	GrabConstraint->BreakConstraint();
+	GrabedObject->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn,ECollisionResponse::ECR_Block);
+	GrabedObject = nullptr;
+}
+
 void AStreamlineTestCharacter::OnFire()
 {
 	if (GrabedObject != nullptr)
@@ -330,19 +329,19 @@ void AStreamlineTestCharacter::OnFire()
 		Hit.Component = GrabedObject;
 		Hit.ImpactPoint = GrabedObject->GetComponentLocation();
 		DropObject();
-		PokeObject(Hit);
+		ShootObject(Hit);
 	}
 	else
 	{
 		FHitResult Hit;
 		if (TraceObject(Hit))
 		{
-			PokeObject(Hit);
+			ShootObject(Hit);
 		}
 	}
 }
 
-void AStreamlineTestCharacter::PokeObject(FHitResult Hit)
+void AStreamlineTestCharacter::ShootObject(FHitResult Hit)
 {
 	FVector AppliedForce = FirstPersonCameraComponent->GetForwardVector()*ShootPower;
 	Hit.GetComponent()->AddImpulseAtLocation(AppliedForce,Hit.ImpactPoint,Hit.BoneName);
