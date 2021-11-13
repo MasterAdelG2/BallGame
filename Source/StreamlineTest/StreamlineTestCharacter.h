@@ -160,10 +160,10 @@ protected:
 	bool bIsDashing=false;
 	// Dash Speed
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
-	float DashSpeed= 10.f;
+	float DashSpeed= 1.f;
 	// Dash Distance
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
-	float DashDistance= 100.f;
+	float DashDistance= 1000.f;
 
 	// Dash Time
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
@@ -171,9 +171,9 @@ protected:
 	// Dash Hight
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
 	float DashHight= 250.f;
-	// Dash Vector
+	// Dash Direction
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
-	FVector DashVector= FVector::ZeroVector;
+	FVector DashDirection= FVector::ZeroVector;
 	// TimerHandle for Dashing After elevation
 	FTimerHandle ApplyDashTimerHandle;
 	// Apply Dash
@@ -219,7 +219,7 @@ protected:
 	bool bIsJetting = false;
 	// JetBack Flying Power
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "JetBack")
-	float JetPower = 20.f;
+	float JetPower = 2000.f;
 	// Triggers Jetting
 	void Jetting();
 	// Stops Jetting Trigger

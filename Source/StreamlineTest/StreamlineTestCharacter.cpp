@@ -126,19 +126,20 @@ void AStreamlineTestCharacter::Tick(float DeltaTime)
 
 	if (!bIsDashing)
 	{
-		FVector AddedMovement = GetActorForwardVector()* MoveForwardThrottle + GetActorRightVector()* MoveRightThrottle;
+		FVector MoveDirection = GetActorForwardVector()* MoveForwardThrottle + GetActorRightVector()* MoveRightThrottle;
+		MoveDirection*= DeltaTime;
 		// Apply JetBack Force if Pressed
 		if (bIsJetting)	
 		{
-			AddedMovement.Z = JetPower;
-			LaunchCharacter(AddedMovement,false,false);
+			MoveDirection.Z = JetPower*DeltaTime;
+			LaunchCharacter(MoveDirection,false,false);
 		}
 		if (MoveForwardThrottle || MoveRightThrottle)
 		{
 			// Apply Movement if Not have Dash Order
 			if (!bDashOrder)	
 			{
-				AddMovementInput(AddedMovement * MoveSpeed);
+				AddMovementInput(MoveDirection * MoveSpeed);
 			}
 			// Applying Dash if Not Jetting
 			else if (!bIsJetting && !GetCharacterMovement()->IsFalling())
@@ -146,7 +147,7 @@ void AStreamlineTestCharacter::Tick(float DeltaTime)
 				bIsDashing=true;
 				LaunchCharacter(FVector(0,0,DashHight),false,false);
 				GetWorldTimerManager().SetTimer(ApplyDashTimerHandle,this,&AStreamlineTestCharacter::Dash,0.1f,false);
-				DashVector = MoveForwardThrottle ? GetActorForwardVector() * MoveForwardThrottle : GetActorRightVector()* MoveRightThrottle;
+				DashDirection = MoveForwardThrottle ? GetActorForwardVector() * MoveForwardThrottle : GetActorRightVector()* MoveRightThrottle;
 			}
 		}
 	}
@@ -265,7 +266,7 @@ bool AStreamlineTestCharacter::EnableTouchscreenMovement(class UInputComponent* 
 
 void AStreamlineTestCharacter::Dash()
 {
-	LaunchCharacter(DashVector*DashDistance*DashSpeed,false,false);
+	LaunchCharacter(DashDirection*DashSpeed,false,false);
 }
 
 // Triggers DashOrder to Dash on Next Tick
