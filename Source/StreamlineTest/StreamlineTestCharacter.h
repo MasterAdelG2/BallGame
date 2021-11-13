@@ -158,22 +158,28 @@ protected:
 	bool bDashOrder=false;
 	// Prevent any Movement or Flying from Happening
 	bool bIsDashing=false;
+
 	// Dash Speed
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
-	float DashSpeed= 1.f;
+	float DashSpeed= 1000.f;
 	// Dash Distance
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
-	float DashDistance= 1000.f;
-
+	float DashDistance= 300.f;
 	// Dash Time
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
 	float DashTime= 1.f;
+	// Dash Direction
+	FVector DashDirection= FVector::ZeroVector;
+	// Actor Location Before Dashing
+	FVector StartDashLocation;
+	// Actor Location After Dashing
+	FVector EndDashLocation;
+	// World Time at Dash Start
+	float StartDashTime;
+	// World Time at Dash End
+	float EndDashTime;
 	// Dash Hight
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
 	float DashHight= 250.f;
-	// Dash Direction
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "Dashing")
-	FVector DashDirection= FVector::ZeroVector;
 	// TimerHandle for Dashing After elevation
 	FTimerHandle ApplyDashTimerHandle;
 	// Apply Dash

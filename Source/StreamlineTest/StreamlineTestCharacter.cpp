@@ -144,17 +144,27 @@ void AStreamlineTestCharacter::Tick(float DeltaTime)
 			// Applying Dash if Not Jetting
 			else if (!bIsJetting && !GetCharacterMovement()->IsFalling())
 			{
-				bIsDashing=true;
-				LaunchCharacter(FVector(0,0,DashHight),false,false);
-				GetWorldTimerManager().SetTimer(ApplyDashTimerHandle,this,&AStreamlineTestCharacter::Dash,0.1f,false);
 				DashDirection = MoveForwardThrottle ? GetActorForwardVector() * MoveForwardThrottle : GetActorRightVector()* MoveRightThrottle;
+				EndDashLocation = GetActorLocation() + DashDirection * DashDistance;
+				LaunchCharacter(FVector(0,0,DashHight),false,false);
+				GetWorldTimerManager().SetTimer(ApplyDashTimerHandle,this,&AStreamlineTestCharacter::Dash,0.1f,false);				
 			}
 		}
 	}
-	// if isDashing and Touched the Ground set isDashing back to false
-	else if (!GetCharacterMovement()->IsFalling())
+	// if isDashing Get Current Needed Location or Stop Dashing
+	else
 	{
-		bIsDashing= false;
+		float CurrentTime = GetWorld()->GetTimeSeconds();
+		if (CurrentTime<=EndDashTime)
+		{
+			float Alfa = (CurrentTime - StartDashTime) / DashTime;
+			FVector CurrentLocation= FMath::Lerp(StartDashLocation,EndDashLocation,Alfa);
+			SetActorLocation(CurrentLocation,true);
+		}
+		else
+		{
+			bIsDashing = false;
+		}
 	}
 	// set DashOrder back to false
 	bDashOrder = false;
@@ -266,7 +276,11 @@ bool AStreamlineTestCharacter::EnableTouchscreenMovement(class UInputComponent* 
 
 void AStreamlineTestCharacter::Dash()
 {
-	LaunchCharacter(DashDirection*DashSpeed,false,false);
+	StartDashLocation = GetActorLocation();
+	DashTime = DashDistance / DashSpeed;
+	StartDashTime = GetWorld()->GetTimeSeconds();
+	EndDashTime = StartDashTime + DashTime;
+	bIsDashing=true;
 }
 
 // Triggers DashOrder to Dash on Next Tick
