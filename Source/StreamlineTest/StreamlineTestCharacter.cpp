@@ -16,6 +16,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -97,6 +99,8 @@ AStreamlineTestCharacter::AStreamlineTestCharacter()
 	GrabConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("GrabConstraint"));
 	GrabConstraint->SetupAttachment(HeldSlot);
 
+	JettingSFXSource = CreateDefaultSubobject<UAudioComponent>(TEXT("JetMotorAudioSource"));
+	JettingSFXSource->SetupAttachment(Mesh1P);
 }
 
 void AStreamlineTestCharacter::BeginPlay()
@@ -118,6 +122,7 @@ void AStreamlineTestCharacter::BeginPlay()
 		VR_Gun->SetHiddenInGame(true, true);
 		Mesh1P->SetHiddenInGame(false, true);
 	}
+	JettingSFXSource->Stop();
 }
 
 void AStreamlineTestCharacter::Tick(float DeltaTime)
@@ -327,6 +332,11 @@ void AStreamlineTestCharacter::GrabObject(FHitResult Hit)
 	GrabedObject = Hit.GetComponent();
 	FVector GunGrabPoint = FirstPersonCameraComponent->GetComponentLocation() + FirstPersonCameraComponent->GetForwardVector() * 250;
 	HeldSlot->SetWorldLocation(GunGrabPoint);
+	// Play Sound
+	if (GrabSFX != nullptr)
+	{
+		UGameplayStatics::SpawnSoundAttached(GrabSFX,RootComponent);
+	}
 }
 
 void AStreamlineTestCharacter::DropObject()
@@ -381,9 +391,11 @@ void AStreamlineTestCharacter::ShootObject(FHitResult Hit)
 void AStreamlineTestCharacter::Jetting()
 {
 	bIsJetting = true;
+	JettingSFXSource->Play();
 }
 
 void AStreamlineTestCharacter::StoppedJetting()
 {
 	bIsJetting = false;
+	JettingSFXSource->Stop();
 }

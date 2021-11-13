@@ -10,12 +10,7 @@
 		}
 	],
 	"settings": {
-		"typescript.tsc.autoDetect": "off",
-		"C_Cpp.default.forcedInclude": [
-			"${default}",
-			"C:\\PROJECTS\\UE\\StreamlineTest\\Intermediate\\Build\\Win64\\UE4Editor\\Development\\StreamlineTest\\Definitions.StreamlineTest.h",
-			"C:\\PROJECTS\\UE\\StreamlineTest\\Intermediate\\Build\\Win64\\StreamlineTestEditor\\Development\\Engine\\SharedPCH.Engine.ShadowErrors.h"
-		]
+		"typescript.tsc.autoDetect": "off"
 	},
 	"extensions": {
 		"recommendations": [

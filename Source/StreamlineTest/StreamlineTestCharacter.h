@@ -13,6 +13,7 @@ class UCameraComponent;
 class UMotionControllerComponent;
 class UAnimMontage;
 class USoundBase;
+class UAudioComponent;
 
 UCLASS(config=Game)
 class AStreamlineTestCharacter : public ACharacter
@@ -204,6 +205,9 @@ protected:
 	// Shooting Power
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
 	float ShootPower = 1000000.f;
+	// Grab Sound Effect
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "GravGun")
+	USoundBase* GrabSFX;
 	// Try Grab Targeted Object
 	UFUNCTION()
 	void OnGrab();
@@ -230,4 +234,7 @@ protected:
 	void Jetting();
 	// Stops Jetting Trigger
 	void StoppedJetting();
+	// Jetting Sound Effect
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "JetBack")
+	UAudioComponent* JettingSFXSource;
 };
