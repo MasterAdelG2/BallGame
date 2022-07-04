@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class StreamlineTest : ModuleRules
+public class BallGame : ModuleRules
 {
-	public StreamlineTest(ReadOnlyTargetRules Target) : base(Target)
+	public BallGame(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 

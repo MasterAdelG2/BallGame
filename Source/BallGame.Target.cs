@@ -3,12 +3,12 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class StreamlineTestTarget : TargetRules
+public class BallGameTarget : TargetRules
 {
-	public StreamlineTestTarget(TargetInfo Target) : base(Target)
+	public BallGameTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.Add("StreamlineTest");
+		ExtraModuleNames.Add("BallGame");
 	}
 }
